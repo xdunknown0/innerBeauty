@@ -103,18 +103,19 @@ tabs();grid();draw();
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getDatabase,ref,get,set,update,push,onValue,query,orderByChild,remove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import {getDatabase,ref,get,set,update,push,onValue,query,orderByChild,remove,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 const app=initializeApp({apiKey:"AIzaSyCrWnK7nwci44imvE9_2DmXiJg1L6i0LOU",authDomain:"innerbeauty-414f8.firebaseapp.com",databaseURL:"https://innerbeauty-414f8-default-rtdb.firebaseio.com",projectId:"innerbeauty-414f8",storageBucket:"innerbeauty-414f8.firebasestorage.app",messagingSenderId:"278889412006",appId:"1:278889412006:web:f7ddfb2aebc93d249bcb67"});
 const auth=getAuth(app),db=getDatabase(app),R=p=>ref(db,p),ADMIN="xinner",MAIL=u=>u.toLowerCase()+"@innerbeauty.app";
-let me=null,admin=false,unsubs=[],pk="",pend=false,lo=null,pT=0,rq=false,iv=0;const ld=$("#ld");
+let me=null,admin=false,unsubs=[],pk="",pend=false,lo=null,payKs=[],ml=false,off=0,exing=false,iv=0;
+onValue(R(".info/serverTimeOffset"),s=>{off=s.val()||0});const ld=$("#ld");
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ST={placed:"Order placed. Confirm payment to continue",awaiting_payment:"Waiting for payment",submitted:"Payment submitted. Waiting for admin to confirm",confirmed:"Order confirmed"};
-const PAY_MS=6e5,RQ="Payment time is over. Please send me the payment info again.",left=()=>Math.min(PAY_MS,pT+PAY_MS-Date.now()),fmt=r=>Math.floor(r/6e4)+":"+String(Math.floor(r%6e4/1e3)).padStart(2,"0");
+const PAY_MS=6e5,RQ="Payment time is over. Please send me the payment info again.",left=()=>lo&&lo.payAt?Math.min(PAY_MS,lo.payAt+PAY_MS-(Date.now()+off)):PAY_MS,fmt=r=>Math.floor(r/6e4)+":"+String(Math.floor(r%6e4/1e3)).padStart(2,"0");
 const dt=t=>new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
 const orderText=o=>`New order – innerBeauty\n`+o.items.map(l=>`${l.q} x ${l.n} (Size ${l.s}) = ${l.p*l.q} tk`).join("\n")+`\nSubtotal: ${o.sub} tk\nDelivery: ${o.del} tk\nTotal: ${o.total} tk\n\nName: ${o.name}\nAddress: ${o.address}`;
 const shrink=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const k=Math.min(1,640/i.width),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);let d=c.toDataURL("image/jpeg",.6);if(d.length>180000)d=c.toDataURL("image/jpeg",.35);ok(d)};i.onerror=no;i.src=r.result};r.onerror=no;r.readAsDataURL(f)});
 const say=(oid,from,text)=>push(R("orders/"+oid+"/msgs"),{from,text,t:Date.now()});
-function stop(){unsubs.forEach(f=>f());unsubs=[];pk="";clearInterval(iv);pT=0;rq=false;lo=null}
+function stop(){unsubs.forEach(f=>f());unsubs=[];pk="";clearInterval(iv);payKs=[];ml=false;exing=false;lo=null}
 function sync(u){me=u;admin=!!u&&u.email==MAIL(ADMIN);$("#lg").textContent=u?"Logout":"Login";$("#adm").hidden=!admin;$("#ord").hidden=true;
  if(u&&!admin)get(R("orders/"+u.uid)).then(s=>{$("#ord").hidden=!s.exists()}).catch(()=>{});
  if(u&&!admin&&!$("#n").value)$("#n").value=u.email.split("@")[0]}
@@ -139,7 +140,7 @@ function openChat(oid){stop();const role=admin&&oid!=me.uid?"admin":"user";$("#c
  $("#cbody").innerHTML=`${role=="admin"?'<button class="add" id="bk" style="padding:6px 12px;width:auto">← Dashboard</button>':""}<h2 style="font-size:30px;margin:8px 0">${role=="admin"?"Customer order":"Your order"}</h2><div id="hd"></div><div class="msgs" id="ms" aria-live="polite"></div><div id="pf"></div><div class="row" id="mr"><input id="mi" placeholder="Type a message" aria-label="Message"><button class="add" id="sd" style="flex:0 0 80px">Send</button></div>`;
  $("#chat").classList.add("open");if($("#bk"))$("#bk").onclick=dash;
  unsubs.push(onValue(R("orders/"+oid),s=>hd(s.val(),oid,role)));
- unsubs.push(onValue(query(R("orders/"+oid+"/msgs"),orderByChild("t")),s=>{let h="";pT=0;rq=false;s.forEach(c=>{const m=c.val();if(m.from=="admin"&&/^Please pay /.test(m.text)){pT=m.t;rq=false}if(m.from=="user"&&m.text==RQ)rq=true;h+=`<div class="m ${(m.from=="admin")==(role=="admin")?"me":""}">${esc(m.text)}</div>`});$("#ms").innerHTML=h;$("#ms").scrollTop=1e9;pform(oid,role)}));
+ unsubs.push(onValue(query(R("orders/"+oid+"/msgs"),orderByChild("t")),s=>{let h="";payKs=[];s.forEach(c=>{const m=c.val();if(m.from=="admin"&&/^Please pay /.test(m.text))payKs.push(c.key);h+=`<div class="m ${(m.from=="admin")==(role=="admin")?"me":""}">${esc(m.text)}</div>`});$("#ms").innerHTML=h;$("#ms").scrollTop=1e9;ml=true;pform(oid,role)}));
  const send=async()=>{const t=$("#mi").value.trim();if(!t)return;$("#mi").value="";await say(oid,role,t)};
  $("#sd").onclick=send;$("#mi").onkeydown=e=>{if(e.key=="Enter")send()};
  iv=setInterval(()=>{if(!$("#tm"))return;if(left()<=0)pform(oid,role);else $("#tm").textContent=fmt(left())},1e3)}
@@ -151,16 +152,26 @@ function hd(o,oid,role){if(!o||!$("#hd"))return;lo=o;
  if(o.payment)h+=`<div class="box"><b>Payment details</b><span>${esc(o.payment.method)} · paid from ${esc(o.payment.from)} · Transaction ID ${esc(o.payment.trx)}</span>${o.payment.shot?`<img class="sh" src="${o.payment.shot}" alt="Payment screenshot">`:""}</div>`;
  $("#hd").innerHTML=h;const hide=role=="user"&&o.status=="placed";$("#ms").style.display=$("#mr").style.display=hide?"none":"";
  if($("#pc"))$("#pc").onclick=async()=>{await say(oid,"user",orderText(o));await update(R("orders/"+oid),{status:"awaiting_payment"})};
- if($("#sf"))$("#sf").onclick=async()=>{const pt=$("#pt").value.trim(),pmd=$("#pmd").value,ptp=$("#ptp").value;if(!pt)return;await update(R("orders/"+oid),{formReq:true,payTo:pt,payMethod:pmd,payType:ptp});await say(oid,"admin",`Please pay ${tk(o.total)} by ${pmd} ${ptp} to ${pt}, then fill in the payment form below.`)};
+ if($("#sf"))$("#sf").onclick=async()=>{const pt=$("#pt").value.trim(),pmd=$("#pmd").value,ptp=$("#ptp").value;if(!pt)return;await update(R("orders/"+oid),{formReq:true,payTo:pt,payMethod:pmd,payType:ptp,payExp:false,payReq:false,payAt:serverTimestamp()});await say(oid,"admin",`Please pay ${tk(o.total)} by ${pmd} ${ptp} to ${pt}, then fill in the payment form below.`)};
  if($("#cf"))$("#cf").onclick=async()=>{$("#cf").disabled=true;try{await update(R("orders/"+oid),{status:"confirmed",confirmedAt:Date.now()});await set(R("sales/"+oid+"_"+o.t),{uid:oid,name:o.name,total:o.total,t:Date.now()});await say(oid,"admin","Your payment is confirmed. Your order is confirmed. Thank you!")}catch(x){$("#cf").disabled=false}};
  pform(oid,role)}
+async function expire(oid){if(exing||!ml)return;exing=true;const u={["orders/"+oid+"/payExp"]:true,["orders/"+oid+"/formReq"]:false};payKs.forEach(k=>u["orders/"+oid+"/msgs/"+k]=null);try{await update(ref(db),u)}catch(x){}exing=false}
 function pform(oid,role){const o=lo;if(!o||!$("#pf"))return;
- const on=role=="user"&&o.formReq&&o.status=="awaiting_payment",ex=on&&pT>0&&left()<=0;
- const key=role+o.formReq+o.status+(o.payTo||"")+(o.payMethod||"")+(o.payType||"")+pT+ex+rq;
+ const wait=o.status=="awaiting_payment",on=wait&&o.formReq&&!o.payExp,ex=!!(on&&o.payAt&&left()<=0),gone=ex||(wait&&!!o.payExp);
+ if(ex)expire(oid);
+ const key=role+o.status+o.formReq+(o.payTo||"")+(o.payMethod||"")+(o.payType||"")+(o.payAt||"")+(o.payExp||"")+(o.payReq||"")+ex;
  if(key===pk)return;pk=key;
- $("#pf").innerHTML=!on?"":ex?`<div class="box"><b>Payment time is over</b><small>You did not pay within 10 minutes, so the payment method has changed. Please get the payment info again to pay.</small><div class="err" id="pe" role="alert"></div>${rq?"<small>Request sent. Please wait for the new payment info.</small>":'<button class="cartbtn" id="pr">Get payment info again</button>'}</div>`:`<div class="box"><b>Payment form</b>${pT?`<small>Time left to pay: <b id="tm">${fmt(left())}</b></small>`:""}<small>Pay ${tk(o.total)} by ${esc(o.payMethod)} ${esc(o.payType)} to ${esc(o.payTo)}, then fill in this form.</small><input id="pn" placeholder="The number you sent the money from" inputmode="tel" aria-label="The number you sent the money from"><input id="px" placeholder="Transaction ID"><label>Payment screenshot<input id="ps" type="file" accept="image/*"></label><div class="err" id="pe" role="alert"></div><button class="cartbtn" id="pb">Submit payment</button></div>`;
- if($("#pr"))$("#pr").onclick=async()=>{$("#pr").disabled=true;try{await say(oid,"user",RQ)}catch(x){$("#pr").disabled=false;$("#pe").textContent="Could not send. Please try again."}};
- if($("#pb"))$("#pb").onclick=async()=>{if(pT&&left()<=0){pform(oid,role);return}const from=$("#pn").value.trim(),trx=$("#px").value.trim(),f=$("#ps").files[0];
+ const tm=o.payAt?`<small>${role=="user"?"Time left to pay":"Customer's time left to pay"}: <b id="tm">${fmt(left())}</b></small>`:"";
+ let h="";
+ if(role=="user"){
+  if(on&&!ex)h=`<div class="box"><b>Payment form</b>${tm}<small>Pay ${tk(o.total)} by ${esc(o.payMethod)} ${esc(o.payType)} to ${esc(o.payTo)}, then fill in this form.</small><input id="pn" placeholder="The number you sent the money from" inputmode="tel" aria-label="The number you sent the money from"><input id="px" placeholder="Transaction ID"><label>Payment screenshot<input id="ps" type="file" accept="image/*"></label><div class="err" id="pe" role="alert"></div><button class="cartbtn" id="pb">Submit payment</button></div>`;
+  else if(gone)h=`<div class="box"><b>Payment time is over</b><small>You did not pay within 10 minutes, so the payment method has changed. Please get the payment info again to pay.</small><div class="err" id="pe" role="alert"></div>${o.payReq?"<small>Request sent. Please wait for the new payment info.</small>":'<button class="cartbtn" id="pr">Get payment info again</button>'}</div>`}
+ else if(wait){
+  if(on&&!ex&&tm)h=`<div class="box">${tm}</div>`;
+  else if(gone)h=`<div class="box"><b>Payment time expired</b><small>The customer did not pay within 10 minutes and the payment message was removed. Send the payment form again to give new payment info.</small>${o.payReq?"<small>The customer asked for the payment info again.</small>":""}</div>`}
+ $("#pf").innerHTML=h;
+ if($("#pr"))$("#pr").onclick=async()=>{$("#pr").disabled=true;try{await update(R("orders/"+oid),{payReq:true});await say(oid,"user",RQ)}catch(x){$("#pr").disabled=false;$("#pe").textContent="Could not send. Please try again."}};
+ if($("#pb"))$("#pb").onclick=async()=>{if(lo&&lo.payAt&&left()<=0){pform(oid,role);return}const from=$("#pn").value.trim(),trx=$("#px").value.trim(),f=$("#ps").files[0];
   if(!/^[0-9+\- ]{10,15}$/.test(from)||!trx||!f){$("#pe").textContent="Enter the number, transaction ID and a screenshot.";return}
   try{$("#pb").disabled=true;const shot=await shrink(f),method=o.payMethod||"bKash";
    await update(R("orders/"+oid),{payment:{method,from,trx,shot},status:"submitted"});
@@ -172,15 +183,19 @@ function chart(S){const a=Object.values(S).sort((x,y)=>x.t-y.t);if(!a.length)ret
  let g="";for(let i=0;i<=4;i++){const v=mx*i/4,y=Y(v);g+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" stroke="#223040"/><text x="${l-6}" y="${y+4}" fill="#9fb0c0" font-size="11" text-anchor="end">${Math.round(v)}</text>`}
  const ly=Y(c);return`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Income over time">${g}<path d="${d}L${X(t1)},${Y(0)}L${X(t0)},${Y(0)}Z" fill="#16a34a" opacity=".18"/><path d="${d}" fill="none" stroke="#22c55e" stroke-width="2.5"/><line x1="${l}" x2="${W-r}" y1="${ly}" y2="${ly}" stroke="#22c55e" stroke-dasharray="3 3"/><rect x="${W-r+2}" y="${ly-11}" width="64" height="22" rx="4" fill="#22c55e"/><text x="${W-r+34}" y="${ly+4}" font-size="12" font-weight="700" fill="#052e16" text-anchor="middle">৳${c}</text><text x="${l}" y="${H-6}" font-size="11" fill="#9fb0c0">${dt(a[0].t)}</text><text x="${W-r}" y="${H-6}" font-size="11" fill="#9fb0c0" text-anchor="end">${dt(t1)}</text></svg>`}
 function dash(){stop();$("#chat").classList.add("open","wide");
- $("#cbody").innerHTML=`<h2 style="font-size:34px">Dashboard</h2><div class="stats" id="st"></div><div class="box"><b>Income</b><div class="ch" id="ch"></div></div><div class="box"><b>Orders</b><div class="ol" id="ol" style="flex-direction:column"></div></div><div class="box"><b>Accounts</b><div id="ul"></div></div>`;
+ $("#cbody").innerHTML=`<h2 style="font-size:34px">Dashboard</h2><div class="stats" id="st"></div><div class="box"><b>Income</b><button class="cartbtn" id="rs" style="justify-self:start;padding:6px 14px">Reset to ৳0</button><div class="ch" id="ch"></div></div><div class="box"><b>Orders</b><div class="ol" id="ol" style="flex-direction:column"></div></div><div class="box"><b>Accounts</b><div id="ul"></div></div>`;
  let U={},O={},S={};const paint=()=>{const sv=Object.values(S),inc=sv.reduce((s,x)=>s+ +x.total,0),ov=Object.entries(O).sort((x,y)=>y[1].t-x[1].t);
   $("#st").innerHTML=[["Accounts",Object.keys(U).length],["Orders confirmed",sv.length],["Income",tk(inc)],["Payments to review",ov.filter(x=>x[1].status=="submitted").length],["Pending orders",ov.filter(x=>x[1].status!="confirmed").length]].map(x=>`<div class="stat"><small>${x[0]}</small><b>${x[1]}</b></div>`).join("");
   $("#ch").innerHTML=chart(S);
   $("#ol").innerHTML=ov.length?ov.map(([k,o])=>`<div style="display:flex;gap:6px;width:100%"><button data-o="${esc(k)}" style="text-align:left;flex:1">${esc(o.name)} · ${tk(o.total)}<br><small>${ST[o.status]}</small></button><button data-del="${esc(k)}" aria-label="Delete order" style="color:#d33;border-color:#d33">Delete</button></div>`).join(""):"No orders yet.";
   const us=Object.values(U).sort((x,y)=>y.t-x.t);$("#ul").innerHTML=us.length?us.map(u=>`<div class="item"><span class="t">${esc(u.name)}</span><small>${dt(u.t)}</small></div>`).join(""):"No accounts yet."};
  unsubs.push(onValue(R("users"),s=>{U=s.val()||{};paint()}),onValue(R("orders"),s=>{O=s.val()||{};paint()}),onValue(R("sales"),s=>{S=s.val()||{};paint()}));
- $("#ol").onclick=async e=>{const b=e.target.closest("[data-del]");if(!b)return;const k=b.dataset.del,o=O[k];if(!o||!confirm("Delete this order ("+o.name+", "+tk(o.total)+")? If it was confirmed, its amount will also be removed from income."))return;
-  b.disabled=true;try{await remove(R("orders/"+k));for(const [sk,sv] of Object.entries(S))if(sv.uid==k)await remove(R("sales/"+sk))}catch(x){b.disabled=false;alert("Could not delete. Please try again.")}}}
+ $("#rs").onclick=async()=>{if(!confirm("Reset income and confirmed-order count to ৳0? This cannot be undone."))return;try{await remove(R("sales"))}catch(x){alert("Could not reset: "+(x.code||x.message))}};
+ $("#ol").onclick=async e=>{const b=e.target.closest("[data-del]");if(!b)return;const k=b.dataset.del,o=O[k];if(!o)return;
+  let sk=k+"_"+o.t;if(!S[sk])sk=o.status=="confirmed"?Object.keys(S).find(i=>S[i].uid==k&&+S[i].total==+o.total):null;
+  if(!confirm("Delete this order ("+o.name+", "+tk(o.total)+")?"+(sk?" Its amount will also be removed from income.":"")))return;
+  b.disabled=true;const u={["orders/"+k]:null};if(sk)u["sales/"+sk]=null;
+  try{await update(ref(db),u)}catch(x){b.disabled=false;alert("Could not delete: "+(x.code||x.message))}}}
 $("#cbody").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b)openChat(b.dataset.o)});
 $("#ord").onclick=()=>openChat(me.uid);$("#adm").onclick=dash;
 $("#cx").onclick=()=>{stop();$("#chat").classList.remove("open","wide")};
