@@ -34,7 +34,7 @@ main{max-width:1100px;margin:0 auto;padding:36px 20px}
 .old{color:var(--mut);font-weight:400;font-size:14px}.off{background:var(--blush);color:var(--acc);border-radius:6px;padding:2px 8px;font-size:13px;font-weight:700;align-self:flex-start}.price{font-weight:700;font-size:18px}
 .row{display:flex;gap:8px;margin-top:auto}
 select,input,textarea{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:9px;width:100%}
-.row select{width:auto}.add{flex:1;background:var(--acc);color:var(--accink);border:0;border-radius:8px;font-weight:700}
+.row select{width:auto;align-self:center;padding:4px 6px;font-size:13px;border-radius:6px}.add{flex:1;background:var(--acc);color:var(--accink);border:0;border-radius:8px;font-weight:700}.card .add{padding:14px 18px;font-size:17px}
 .drawer{position:fixed;inset:0 0 0 auto;width:min(420px,100%);background:var(--bg);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .25s;z-index:10;display:flex;flex-direction:column;padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px));overflow:auto}
 .drawer.open{transform:none}
 .item{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:10px 0}
@@ -49,7 +49,7 @@ form{display:grid;gap:8px;margin-top:12px}
 [hidden]{display:none!important}.drawer.wide{width:min(900px,100%)}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}.stat b{display:block;font-size:28px;font-family:'Cormorant Garamond',serif}.ch{background:#0f1720;border-radius:10px;padding:8px}.ch svg{width:100%;height:auto}
 dialog{border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);padding:20px;width:min(360px,92vw)}dialog::backdrop{background:#0008}#lf{display:grid;gap:10px}
 footer{text-align:center;color:var(--mut);padding:30px 20px 40px;border-top:1px solid var(--line)}
-@media(max-width:720px){.hero{grid-template-columns:1fr;padding:24px 14px;gap:18px}.hero .imgs img{border-radius:80px 80px 10px 10px}.hero .imgs img+img{margin-top:20px;border-radius:10px 10px 80px 80px}main{padding:24px 14px}main h2{font-size:32px!important}.grid{grid-template-columns:repeat(2,1fr);gap:12px}.card div{padding:10px;gap:6px}.card h3{font-size:18px}.card .row{flex-direction:column}.card .row select{width:100%}.price{font-size:16px}header{padding:10px 12px;flex-wrap:wrap;gap:8px}.logo{font-size:26px}header>span:last-child{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.cartbtn{padding:8px 13px;font-size:14px}.tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.tabs button{white-space:nowrap}.q button{width:36px;height:36px}.x{padding:4px 10px}.drawer{width:100%;height:100dvh;padding-left:14px;padding-right:14px}.msgs{max-height:36dvh}.info{font-size:14px}}
+@media(max-width:720px){.hero{grid-template-columns:1fr;padding:24px 14px;gap:18px}.hero .imgs img{border-radius:80px 80px 10px 10px}.hero .imgs img+img{margin-top:20px;border-radius:10px 10px 80px 80px}main{padding:24px 14px}main h2{font-size:32px!important}.grid{grid-template-columns:repeat(2,1fr);gap:12px}.card div{padding:10px;gap:6px}.card h3{font-size:18px}.card .row{flex-direction:column}.card .row select{width:auto;min-width:76px;align-self:flex-start}.price{font-size:16px}header{padding:10px 12px;flex-wrap:wrap;gap:8px}.logo{font-size:26px}header>span:last-child{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.cartbtn{padding:8px 13px;font-size:14px}.tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.tabs button{white-space:nowrap}.q button{width:36px;height:36px}.x{padding:4px 10px}.drawer{width:100%;height:100dvh;padding-left:14px;padding-right:14px}.msgs{max-height:36dvh}.info{font-size:14px}}
 @media(max-width:380px){.grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.drawer{transition:none}}
 </style></head><body>
@@ -106,14 +106,15 @@ import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmai
 import {getDatabase,ref,get,set,update,push,onValue,query,orderByChild} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 const app=initializeApp({apiKey:"AIzaSyCrWnK7nwci44imvE9_2DmXiJg1L6i0LOU",authDomain:"innerbeauty-414f8.firebaseapp.com",databaseURL:"https://innerbeauty-414f8-default-rtdb.firebaseio.com",projectId:"innerbeauty-414f8",storageBucket:"innerbeauty-414f8.firebasestorage.app",messagingSenderId:"278889412006",appId:"1:278889412006:web:f7ddfb2aebc93d249bcb67"});
 const auth=getAuth(app),db=getDatabase(app),R=p=>ref(db,p),ADMIN="xinner",MAIL=u=>u.toLowerCase()+"@innerbeauty.app";
-let me=null,admin=false,unsubs=[],pk="",pend=false;const ld=$("#ld");
+let me=null,admin=false,unsubs=[],pk="",pend=false,lo=null,pT=0,rq=false,iv=0;const ld=$("#ld");
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ST={placed:"Order placed. Confirm payment to continue",awaiting_payment:"Waiting for payment",submitted:"Payment submitted. Waiting for admin to confirm",confirmed:"Order confirmed"};
+const PAY_MS=6e5,RQ="Payment time is over. Please send me the payment info again.",left=()=>Math.min(PAY_MS,pT+PAY_MS-Date.now()),fmt=r=>Math.floor(r/6e4)+":"+String(Math.floor(r%6e4/1e3)).padStart(2,"0");
 const dt=t=>new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
 const orderText=o=>`New order – innerBeauty\n`+o.items.map(l=>`${l.q} x ${l.n} (Size ${l.s}) = ${l.p*l.q} tk`).join("\n")+`\nSubtotal: ${o.sub} tk\nDelivery: ${o.del} tk\nTotal: ${o.total} tk\n\nName: ${o.name}\nAddress: ${o.address}`;
 const shrink=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const k=Math.min(1,640/i.width),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);let d=c.toDataURL("image/jpeg",.6);if(d.length>180000)d=c.toDataURL("image/jpeg",.35);ok(d)};i.onerror=no;i.src=r.result};r.onerror=no;r.readAsDataURL(f)});
 const say=(oid,from,text)=>push(R("orders/"+oid+"/msgs"),{from,text,t:Date.now()});
-function stop(){unsubs.forEach(f=>f());unsubs=[];pk=""}
+function stop(){unsubs.forEach(f=>f());unsubs=[];pk="";clearInterval(iv);pT=0;rq=false;lo=null}
 function sync(u){me=u;admin=!!u&&u.email==MAIL(ADMIN);$("#lg").textContent=u?"Logout":"Login";$("#adm").hidden=!admin;$("#ord").hidden=true;
  if(u&&!admin)get(R("orders/"+u.uid)).then(s=>{$("#ord").hidden=!s.exists()}).catch(()=>{});
  if(u&&!admin&&!$("#n").value)$("#n").value=u.email.split("@")[0]}
@@ -138,10 +139,11 @@ function openChat(oid){stop();const role=admin&&oid!=me.uid?"admin":"user";$("#c
  $("#cbody").innerHTML=`${role=="admin"?'<button class="add" id="bk" style="padding:6px 12px;width:auto">← Dashboard</button>':""}<h2 style="font-size:30px;margin:8px 0">${role=="admin"?"Customer order":"Your order"}</h2><div id="hd"></div><div class="msgs" id="ms" aria-live="polite"></div><div id="pf"></div><div class="row" id="mr"><input id="mi" placeholder="Type a message" aria-label="Message"><button class="add" id="sd" style="flex:0 0 80px">Send</button></div>`;
  $("#chat").classList.add("open");if($("#bk"))$("#bk").onclick=dash;
  unsubs.push(onValue(R("orders/"+oid),s=>hd(s.val(),oid,role)));
- unsubs.push(onValue(query(R("orders/"+oid+"/msgs"),orderByChild("t")),s=>{let h="";s.forEach(c=>{const m=c.val();h+=`<div class="m ${(m.from=="admin")==(role=="admin")?"me":""}">${esc(m.text)}</div>`});$("#ms").innerHTML=h;$("#ms").scrollTop=1e9}));
+ unsubs.push(onValue(query(R("orders/"+oid+"/msgs"),orderByChild("t")),s=>{let h="";pT=0;rq=false;s.forEach(c=>{const m=c.val();if(m.from=="admin"&&/^Please pay /.test(m.text)){pT=m.t;rq=false}if(m.from=="user"&&m.text==RQ)rq=true;h+=`<div class="m ${(m.from=="admin")==(role=="admin")?"me":""}">${esc(m.text)}</div>`});$("#ms").innerHTML=h;$("#ms").scrollTop=1e9;pform(oid,role)}));
  const send=async()=>{const t=$("#mi").value.trim();if(!t)return;$("#mi").value="";await say(oid,role,t)};
- $("#sd").onclick=send;$("#mi").onkeydown=e=>{if(e.key=="Enter")send()}}
-function hd(o,oid,role){if(!o||!$("#hd"))return;
+ $("#sd").onclick=send;$("#mi").onkeydown=e=>{if(e.key=="Enter")send()};
+ iv=setInterval(()=>{if(!$("#tm"))return;if(left()<=0)pform(oid,role);else $("#tm").textContent=fmt(left())},1e3)}
+function hd(o,oid,role){if(!o||!$("#hd"))return;lo=o;
  let h=`<div class="box"><span class="st">${ST[o.status]}</span><small>${o.items.map(l=>`${l.q}× ${esc(l.n)} (${esc(l.s)})`).join(", ")}</small><b>Total ${tk(o.total)} (includes ${tk(o.del)} delivery)</b><small>${esc(o.name)} · ${esc(o.address)}</small></div>`;
  if(role=="user"&&o.status=="placed")h+=`<button class="cartbtn" id="pc">Payment confirm</button>`;
  if(role=="admin"&&o.status=="submitted")h+=`<button class="cartbtn" id="cf">Confirm payment</button>`;
@@ -151,14 +153,19 @@ function hd(o,oid,role){if(!o||!$("#hd"))return;
  if($("#pc"))$("#pc").onclick=async()=>{await say(oid,"user",orderText(o));await update(R("orders/"+oid),{status:"awaiting_payment"})};
  if($("#sf"))$("#sf").onclick=async()=>{const pt=$("#pt").value.trim(),pmd=$("#pmd").value,ptp=$("#ptp").value;if(!pt)return;await update(R("orders/"+oid),{formReq:true,payTo:pt,payMethod:pmd,payType:ptp});await say(oid,"admin",`Please pay ${tk(o.total)} by ${pmd} ${ptp} to ${pt}, then fill in the payment form below.`)};
  if($("#cf"))$("#cf").onclick=async()=>{$("#cf").disabled=true;try{await update(R("orders/"+oid),{status:"confirmed",confirmedAt:Date.now()});await set(R("sales/"+oid+"_"+o.t),{uid:oid,name:o.name,total:o.total,t:Date.now()});await say(oid,"admin","Your payment is confirmed. Your order is confirmed. Thank you!")}catch(x){$("#cf").disabled=false}};
- const key=role+o.formReq+o.status+(o.payTo||"")+(o.payMethod||"")+(o.payType||"");
- if(key!==pk){pk=key;$("#pf").innerHTML=role=="user"&&o.formReq&&o.status=="awaiting_payment"?`<div class="box"><b>Payment form</b><small>Pay ${tk(o.total)} by ${esc(o.payMethod)} ${esc(o.payType)} to ${esc(o.payTo)}, then fill in this form.</small><input id="pn" placeholder="The number you sent the money from" inputmode="tel" aria-label="The number you sent the money from"><input id="px" placeholder="Transaction ID"><label>Payment screenshot<input id="ps" type="file" accept="image/*"></label><div class="err" id="pe" role="alert"></div><button class="cartbtn" id="pb">Submit payment</button></div>`:"";
-  if($("#pb"))$("#pb").onclick=async()=>{const from=$("#pn").value.trim(),trx=$("#px").value.trim(),f=$("#ps").files[0];
-   if(!/^[0-9+\- ]{10,15}$/.test(from)||!trx||!f){$("#pe").textContent="Enter the number, transaction ID and a screenshot.";return}
-   try{$("#pb").disabled=true;const shot=await shrink(f),method=o.payMethod||"bKash";
-    await update(R("orders/"+oid),{payment:{method,from,trx,shot},status:"submitted"});
-    await say(oid,"user",`Payment submitted: ${method}, Transaction ID ${trx}`)}
-   catch(x){$("#pb").disabled=false;$("#pe").textContent="Could not submit. Try a smaller screenshot."}}}}
+ pform(oid,role)}
+function pform(oid,role){const o=lo;if(!o||!$("#pf"))return;
+ const on=role=="user"&&o.formReq&&o.status=="awaiting_payment",ex=on&&pT>0&&left()<=0;
+ const key=role+o.formReq+o.status+(o.payTo||"")+(o.payMethod||"")+(o.payType||"")+pT+ex+rq;
+ if(key===pk)return;pk=key;
+ $("#pf").innerHTML=!on?"":ex?`<div class="box"><b>Payment time is over</b><small>You did not pay within 10 minutes, so the payment method has changed. Please get the payment info again to pay.</small><div class="err" id="pe" role="alert"></div>${rq?"<small>Request sent. Please wait for the new payment info.</small>":'<button class="cartbtn" id="pr">Get payment info again</button>'}</div>`:`<div class="box"><b>Payment form</b>${pT?`<small>Time left to pay: <b id="tm">${fmt(left())}</b></small>`:""}<small>Pay ${tk(o.total)} by ${esc(o.payMethod)} ${esc(o.payType)} to ${esc(o.payTo)}, then fill in this form.</small><input id="pn" placeholder="The number you sent the money from" inputmode="tel" aria-label="The number you sent the money from"><input id="px" placeholder="Transaction ID"><label>Payment screenshot<input id="ps" type="file" accept="image/*"></label><div class="err" id="pe" role="alert"></div><button class="cartbtn" id="pb">Submit payment</button></div>`;
+ if($("#pr"))$("#pr").onclick=async()=>{$("#pr").disabled=true;try{await say(oid,"user",RQ)}catch(x){$("#pr").disabled=false;$("#pe").textContent="Could not send. Please try again."}};
+ if($("#pb"))$("#pb").onclick=async()=>{if(pT&&left()<=0){pform(oid,role);return}const from=$("#pn").value.trim(),trx=$("#px").value.trim(),f=$("#ps").files[0];
+  if(!/^[0-9+\- ]{10,15}$/.test(from)||!trx||!f){$("#pe").textContent="Enter the number, transaction ID and a screenshot.";return}
+  try{$("#pb").disabled=true;const shot=await shrink(f),method=o.payMethod||"bKash";
+   await update(R("orders/"+oid),{payment:{method,from,trx,shot},status:"submitted"});
+   await say(oid,"user",`Payment submitted: ${method}, Transaction ID ${trx}`)}
+  catch(x){$("#pb").disabled=false;$("#pe").textContent="Could not submit. Try a smaller screenshot."}}}
 function chart(S){const a=Object.values(S).sort((x,y)=>x.t-y.t);if(!a.length)return"<small style='color:#9fb0c0'>The chart appears after the first confirmed order.</small>";
  let c=0;const p=[{t:a[0].t-36e5,v:0},...a.map(s=>({t:s.t,v:c+=+s.total}))],W=640,H=240,l=52,r=70,tp=14,b=26,mx=c,t0=p[0].t,t1=p[p.length-1].t;
  const X=t=>l+(t-t0)/(t1-t0)*(W-l-r),Y=v=>tp+(1-v/mx)*(H-tp-b),d=p.map((q,i)=>`${i?"L":"M"}${X(q.t).toFixed(1)},${Y(q.v).toFixed(1)}`).join("");
