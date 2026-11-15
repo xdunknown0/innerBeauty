@@ -103,7 +103,7 @@ tabs();grid();draw();
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getDatabase,ref,get,set,update,push,onValue,query,orderByChild} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import {getDatabase,ref,get,set,update,push,onValue,query,orderByChild,remove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 const app=initializeApp({apiKey:"AIzaSyCrWnK7nwci44imvE9_2DmXiJg1L6i0LOU",authDomain:"innerbeauty-414f8.firebaseapp.com",databaseURL:"https://innerbeauty-414f8-default-rtdb.firebaseio.com",projectId:"innerbeauty-414f8",storageBucket:"innerbeauty-414f8.firebasestorage.app",messagingSenderId:"278889412006",appId:"1:278889412006:web:f7ddfb2aebc93d249bcb67"});
 const auth=getAuth(app),db=getDatabase(app),R=p=>ref(db,p),ADMIN="xinner",MAIL=u=>u.toLowerCase()+"@innerbeauty.app";
 let me=null,admin=false,unsubs=[],pk="",pend=false,lo=null,pT=0,rq=false,iv=0;const ld=$("#ld");
@@ -176,9 +176,11 @@ function dash(){stop();$("#chat").classList.add("open","wide");
  let U={},O={},S={};const paint=()=>{const sv=Object.values(S),inc=sv.reduce((s,x)=>s+ +x.total,0),ov=Object.entries(O).sort((x,y)=>y[1].t-x[1].t);
   $("#st").innerHTML=[["Accounts",Object.keys(U).length],["Orders confirmed",sv.length],["Income",tk(inc)],["Payments to review",ov.filter(x=>x[1].status=="submitted").length],["Pending orders",ov.filter(x=>x[1].status!="confirmed").length]].map(x=>`<div class="stat"><small>${x[0]}</small><b>${x[1]}</b></div>`).join("");
   $("#ch").innerHTML=chart(S);
-  $("#ol").innerHTML=ov.length?ov.map(([k,o])=>`<button data-o="${esc(k)}" style="text-align:left;width:100%">${esc(o.name)} · ${tk(o.total)}<br><small>${ST[o.status]}</small></button>`).join(""):"No orders yet.";
+  $("#ol").innerHTML=ov.length?ov.map(([k,o])=>`<div style="display:flex;gap:6px;width:100%"><button data-o="${esc(k)}" style="text-align:left;flex:1">${esc(o.name)} · ${tk(o.total)}<br><small>${ST[o.status]}</small></button><button data-del="${esc(k)}" aria-label="Delete order" style="color:#d33;border-color:#d33">Delete</button></div>`).join(""):"No orders yet.";
   const us=Object.values(U).sort((x,y)=>y.t-x.t);$("#ul").innerHTML=us.length?us.map(u=>`<div class="item"><span class="t">${esc(u.name)}</span><small>${dt(u.t)}</small></div>`).join(""):"No accounts yet."};
- unsubs.push(onValue(R("users"),s=>{U=s.val()||{};paint()}),onValue(R("orders"),s=>{O=s.val()||{};paint()}),onValue(R("sales"),s=>{S=s.val()||{};paint()}))}
+ unsubs.push(onValue(R("users"),s=>{U=s.val()||{};paint()}),onValue(R("orders"),s=>{O=s.val()||{};paint()}),onValue(R("sales"),s=>{S=s.val()||{};paint()}));
+ $("#ol").onclick=async e=>{const b=e.target.closest("[data-del]");if(!b)return;const k=b.dataset.del,o=O[k];if(!o||!confirm("Delete this order ("+o.name+", "+tk(o.total)+")? If it was confirmed, its amount will also be removed from income."))return;
+  b.disabled=true;try{await remove(R("orders/"+k));for(const [sk,sv] of Object.entries(S))if(sv.uid==k)await remove(R("sales/"+sk))}catch(x){b.disabled=false;alert("Could not delete. Please try again.")}}}
 $("#cbody").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b)openChat(b.dataset.o)});
 $("#ord").onclick=()=>openChat(me.uid);$("#adm").onclick=dash;
 $("#cx").onclick=()=>{stop();$("#chat").classList.remove("open","wide")};
